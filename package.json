@@ -12,6 +12,7 @@
   "keywords": [],
   "type": "module",
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "ua-parser-js": "^2.0.10",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
@@ -27,6 +28,7 @@
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/cookie-parser": "^1.4.10",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.4.0",
     "@types/pg": "^8.23.1",

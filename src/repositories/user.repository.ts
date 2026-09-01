@@ -6,8 +6,8 @@ const createUser = async (userData: {
   name: string;
   email: string;
   password: string;
-}): Promise<User> => {
-  return await prisma.user.create({
+}): Promise<void> => {
+  await prisma.user.create({
     data: {
       email: userData.email,
       name: userData.name,
@@ -58,9 +58,25 @@ const findUserForLogin = async (username: string) => {
       username,
     },
     select: {
-      id:true,
+      id: true,
       username: true,
       password: true,
+    },
+  });
+};
+
+const findExistingUserByUserId = async (userId: string) => {
+  return await prisma.user.findFirst({
+    where: { id: userId },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      name: true,
+      avatarUrl: true,
+      isVerified: true,
+      createdAt: true,
+      updatedAt: true,
     },
   });
 };
@@ -71,4 +87,5 @@ export {
   findExistingUserByEmail,
   findExistingUserByUsername,
   findUserForLogin,
+  findExistingUserByUserId,
 };

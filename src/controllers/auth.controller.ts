@@ -6,6 +6,7 @@ import {
   findExistingUserByEmail,
   findUserForLogin,
   findExistingUserByUsername,
+  findExistingUserByUserId,
 } from "../repositories/user.repository";
 import {
   EmailAlreadyExist,
@@ -70,7 +71,7 @@ const registerUser = async (req: Request, res: Response) => {
       throw new EmailAlreadyExist();
     }
 
-    const user: User = await createUser({
+    await createUser({
       username,
       email,
       name,
@@ -80,7 +81,6 @@ const registerUser = async (req: Request, res: Response) => {
     return res.status(201).json({
       status: 201,
       message: "User created successfully",
-      data: user,
     } as DataResponse);
   } catch (error) {
     if (error instanceof UsernameAlreadyExist) {
@@ -185,7 +185,43 @@ const loginUser = async (req: Request, res: Response) => {
 };
 
 //Get user profile
-const getUserProfile = (req: Request, res: Response) => {};
+const getUserProfile = async (req: Request, res: Response) => {
+  try {
+    const userId: string = req.user.uId;
+
+    const user: User | null = await findExistingUserByUserId(userId);
+
+    if (!user) {
+      throw new UserNotFound();
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: "User Found",
+      data: user,
+    } as DataResponse);
+  } catch (error) {
+    if (error instanceof UserNotFound) {
+      return res.status(404).json({
+        status: 404,
+        message: "User not found",
+        errors: "User not found",
+      } as ErrorResponse);
+    } else if (error instanceof Error) {
+      return res.status(500).json({
+        status: 500,
+        message: "Some Error Occured",
+        errors: error.message,
+      } as ErrorResponse);
+    } else {
+      return res.status(500).json({
+        status: 500,
+        message: "Some Error Occured",
+        errors: "Internal server error",
+      } as ErrorResponse);
+    }
+  }
+};
 
 //update profile
 const updateProfile = (req: Request, res: Response) => {};

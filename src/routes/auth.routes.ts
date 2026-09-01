@@ -11,6 +11,7 @@ import {
   getUserProfile,
   updateProfile,
 } from "../controllers/auth.controller";
+import authenticate from "../middleware/jwt-auth.middleware";
 
 const authRoutes: Router = Router();
 
@@ -33,17 +34,17 @@ authRoutes.post(
 );
 
 //Get Profile
-authRoutes.get("/me", (req: Request, res: Response) => {
+authRoutes.get("/me", authenticate, (req: Request, res: Response) => {
   return getUserProfile(req, res);
 });
 
 //Delete Profile
-authRoutes.delete("/me", (req: Request, res: Response) => {
+authRoutes.delete("/me", authenticate, (req: Request, res: Response) => {
   return deleteProfile(req, res);
 });
 
 //Update Profile
-authRoutes.patch("/me", (req: Request, res: Response) => {
+authRoutes.patch("/me", authenticate, (req: Request, res: Response) => {
   return updateProfile(req, res);
 });
 
