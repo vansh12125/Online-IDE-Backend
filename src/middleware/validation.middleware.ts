@@ -8,7 +8,7 @@ async function validateResult(req: Request, res: Response, next: NextFunction) {
   if (!errors.isEmpty()) {
     return res.status(400).json({
       status: 400,
-      error: errors.array(),
+      errors: errors.array(),
       message: "Validation Error",
     } as ErrorResponse);
   }

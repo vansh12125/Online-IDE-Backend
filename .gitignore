@@ -153,3 +153,4 @@ Desktop.ini
 *.tmp
 *.temp
 *.bak
+/generated/prisma
