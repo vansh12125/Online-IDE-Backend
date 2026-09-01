@@ -1,10 +1,8 @@
 import { prisma } from "../config/prisma.config";
 
-import type { CreateRefreshToken } from "../types";
+import type { CreateRefreshToken, RefreshToken } from "../types";
 
-const saveTokenInDb = async (
-  tokenModel: CreateRefreshToken,
-): Promise<void> => {
+const saveTokenInDb = async (tokenModel: CreateRefreshToken): Promise<void> => {
   await prisma.refreshToken.create({
     data: {
       tokenHash: tokenModel.tokenHash,
@@ -26,4 +24,33 @@ const saveTokenInDb = async (
   });
 };
 
-export { saveTokenInDb };
+const findTokenBySessionIdAndNotRevoked = async (
+  sessionId: string,
+): Promise<RefreshToken | null> => {
+  return await prisma.refreshToken.findFirst({
+    where: {
+      sessionId,
+      revoked: false,
+    },
+  });
+};
+
+const findTokenAndRevoke = async (
+  tokenHash: string,
+  sessionId: string,
+): Promise<boolean> => {
+  const result = await prisma.refreshToken.updateMany({
+    where: {
+      tokenHash,
+      sessionId,
+      revoked: false,
+    },
+    data: {
+      revoked: true,
+    },
+  });
+
+  return result.count > 0;
+};
+
+export { saveTokenInDb, findTokenBySessionIdAndNotRevoked ,findTokenAndRevoke};

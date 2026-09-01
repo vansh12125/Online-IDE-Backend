@@ -1,7 +1,12 @@
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import crypto from "crypto";
-import { saveTokenInDb } from "../repositories/refresh-token.repository";
+import {
+  saveTokenInDb,
+  findTokenBySessionIdAndNotRevoked,
+  findTokenAndRevoke,
+} from "../repositories/refresh-token.repository";
 import { ClientInfo, RefreshToken } from "../types";
+import { InvalidTokenError } from "../errors";
 
 interface TokenPayload extends JwtPayload {
   uid: string;
@@ -32,7 +37,7 @@ const generateAccessToken = (
       uid: userId,
       username: username,
       type: "acc",
-      sId:sessionId
+      sId: sessionId,
     } as TokenPayload,
     config.access.secret,
     {
@@ -53,7 +58,7 @@ const generateRefreshToken = (
       uid: userId,
       username: username,
       type: "ref",
-      sId:sessionId
+      sId: sessionId,
     } as TokenPayload,
     config.refresh.secret,
     {
@@ -64,9 +69,74 @@ const generateRefreshToken = (
   );
 };
 
-const verifyAccessToken = (accessToken: string) => {};
+const verifyAccessToken = async (
+  accessToken: string,
+): Promise<TokenPayload> => {
+  try {
+    const decoded = jwt.verify(accessToken, config.access.secret, {
+      issuer: config.issuer,
+    });
 
-const verifyRefreshToken = (oldRefreshToken: string) => {};
+    if (
+      typeof decoded !== "object" ||
+      decoded === null ||
+      typeof decoded.uid !== "string" ||
+      typeof decoded.sId !== "string" ||
+      typeof decoded.username !== "string" ||
+      decoded.type !== "acc"
+    ) {
+      throw new InvalidTokenError("Invalid access token");
+    }
+
+    const refreshToken: RefreshToken | null =
+      await findTokenBySessionIdAndNotRevoked(decoded.sId);
+
+    if (!refreshToken) {
+      throw new InvalidTokenError("Session has been revoked");
+    }
+
+    return decoded as TokenPayload;
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      throw error;
+    }
+
+    if (error instanceof InvalidTokenError) {
+      throw error;
+    }
+
+    throw new InvalidTokenError("Invalid access token");
+  }
+};
+
+const verifyRefreshToken = async (oldRefreshToken: string) => {
+  const decoded = jwt.verify(oldRefreshToken, config.refresh.secret, {
+    issuer: config.issuer,
+  });
+
+  if (
+    typeof decoded !== "object" ||
+    decoded === null ||
+    typeof decoded.uid !== "string" ||
+    typeof decoded.sId !== "string" ||
+    typeof decoded.username !== "string" ||
+    decoded.type !== "ref"
+  ) {
+    throw new InvalidTokenError("Invalid refresh token");
+  }
+
+  const oldPayload: TokenPayload = decoded as TokenPayload;
+  const sessionId: string = oldPayload.sId;
+  const oldHash: string = hashToken(oldRefreshToken);
+
+  const oldData: boolean = await findTokenAndRevoke(oldHash, sessionId);
+
+  if (!oldData) {
+    throw new InvalidTokenError("Invalid refresh token");
+  }
+
+  return oldPayload;
+};
 
 const hashToken = (token: string): string => {
   return crypto.createHash("sha256").update(token).digest("hex");

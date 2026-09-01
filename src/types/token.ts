@@ -12,7 +12,7 @@ interface RefreshToken {
   sessionId: string;
   userId: string;
   tokenHash:string;
-  clientInfo: ClientInfo;
+  clientInfo?: ClientInfo;
   revoked: boolean;
   createdAt: Date;
   expireAt: Date;
