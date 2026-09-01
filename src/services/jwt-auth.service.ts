@@ -1,9 +1,12 @@
-import jwt, { JwtPayload } from "jsonwebtoken";
+import jwt, { type JwtPayload } from "jsonwebtoken";
 import crypto from "crypto";
+import { saveTokenInDb } from "../repositories/refresh-token.repository";
+import { ClientInfo, RefreshToken } from "../types";
 
 interface TokenPayload extends JwtPayload {
   uid: string;
   username: string;
+  sId: string;
   type: "acc" | "ref";
 }
 
@@ -19,12 +22,17 @@ const config = {
   issuer: String(process.env.JWT_TOKEN_ISSUER),
 };
 
-const generateAccessToken = (userId: string, username: string): string => {
+const generateAccessToken = (
+  userId: string,
+  username: string,
+  sessionId: string,
+): string => {
   return jwt.sign(
     {
       uid: userId,
       username: username,
       type: "acc",
+      sId:sessionId
     } as TokenPayload,
     config.access.secret,
     {
@@ -35,12 +43,17 @@ const generateAccessToken = (userId: string, username: string): string => {
   );
 };
 
-const generateRefreshToken = (userId: string, username: string): string => {
+const generateRefreshToken = (
+  userId: string,
+  username: string,
+  sessionId: string,
+): string => {
   return jwt.sign(
     {
       uid: userId,
       username: username,
       type: "ref",
+      sId:sessionId
     } as TokenPayload,
     config.refresh.secret,
     {
@@ -55,7 +68,27 @@ const verifyAccessToken = (accessToken: string) => {};
 
 const verifyRefreshToken = (oldRefreshToken: string) => {};
 
+const hashToken = (token: string): string => {
+  return crypto.createHash("sha256").update(token).digest("hex");
+};
+
+const saveToken = async (tokenModel: {
+  sessionId: string;
+  userId: string;
+  token: string;
+  clientInfo: ClientInfo;
+}): Promise<void> => {
+  await saveTokenInDb({
+    sessionId: tokenModel.sessionId,
+    userId: tokenModel.userId,
+    tokenHash: hashToken(tokenModel.token),
+    clientInfo: tokenModel.clientInfo,
+    expireAt: new Date(Date.now() + config.refresh.expiry * 1000),
+  });
+};
+
 export {
+  saveToken,
   generateAccessToken,
   generateRefreshToken,
   verifyAccessToken,

@@ -12,15 +12,54 @@ datasource db {
   provider = "postgresql"
 }
 
+//User Table
 model User {
-  id       String @default(uuid())
+  id       String @id @default(uuid())
   username String @unique
   name     String
   email    String @unique
   password String
 
-  avatarUrl String?
-  isVerified Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  avatarUrl     String?
+  isVerified    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+
+  @@index([id])
+  @@index([email])
+  @@index([username])
+}
+
+//RefreshToken Token
+model RefreshToken {
+  id         String      @id @default(uuid())
+  tokenHash  String      @unique
+  sessionId  String
+  user       User        @relation(fields: [userId], references: [id])
+  userId     String
+  revoked    Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  expireAt   DateTime
+  clientInfo ClientInfo?
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([expireAt])
+}
+
+//Client Info
+model ClientInfo {
+  id String @id @default(uuid())
+
+  ipAddress      String
+  browser        String
+  browserVersion String
+  os             String
+  osVersion      String
+  device         String
+
+  refreshTokenId String       @unique
+  refreshToken   RefreshToken @relation(fields: [refreshTokenId], references: [id], onDelete: Cascade)
 }

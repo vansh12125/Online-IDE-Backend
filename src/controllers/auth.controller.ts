@@ -13,12 +13,14 @@ import {
   UsernameAlreadyExist,
   InvalidCredentials,
 } from "../errors";
-import { DataResponse, ErrorResponse } from "../utils";
+import { DataResponse, ErrorResponse, getClientInfo } from "../utils";
 import { hashPassword, verifyPassword } from "../services/bcrypt.service";
 import {
   generateAccessToken,
   generateRefreshToken,
+  saveToken,
 } from "../services/jwt-auth.service";
+import crypto from "crypto";
 
 //constants
 const toBoolean = (val: any) => val === "true";
@@ -126,14 +128,25 @@ const loginUser = async (req: Request, res: Response) => {
     if (!verified) {
       throw new InvalidCredentials();
     }
+
+    const sessionId: string = genetrateSessionId();
     const accessToken: string = generateAccessToken(
       existing.id,
       existing.username,
+      sessionId,
     );
     const refreshToken: string = generateRefreshToken(
       existing.id,
       existing.username,
+      sessionId,
     );
+
+    await saveToken({
+      token: refreshToken,
+      userId: existing.id,
+      clientInfo: getClientInfo(req),
+      sessionId: sessionId,
+    });
 
     res.cookie(accessCookieName, accessToken, accessCookieConfig);
     res.cookie(refreshCookieName, refreshToken, refreshCookieConfig);
@@ -179,6 +192,10 @@ const updateProfile = (req: Request, res: Response) => {};
 
 //delete profile
 const deleteProfile = (req: Request, res: Response) => {};
+
+const genetrateSessionId = (): string => {
+  return crypto.randomBytes(32).toString("hex");
+};
 
 export {
   registerUser,
