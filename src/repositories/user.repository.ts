@@ -38,4 +38,37 @@ const findExistingUserByUsernameOrEmail = async (
   });
 };
 
-export { createUser, findExistingUserByUsernameOrEmail };
+const findExistingUserByUsername = async (
+  username: string,
+): Promise<User | null> => {
+  return await prisma.user.findFirst({
+    where: { username },
+  });
+};
+
+const findExistingUserByEmail = async (email: string): Promise<User | null> => {
+  return await prisma.user.findFirst({
+    where: { email },
+  });
+};
+
+const findUserForLogin = async (username: string) => {
+  return prisma.user.findUnique({
+    where: {
+      username,
+    },
+    select: {
+      id:true,
+      username: true,
+      password: true,
+    },
+  });
+};
+
+export {
+  createUser,
+  findExistingUserByUsernameOrEmail,
+  findExistingUserByEmail,
+  findExistingUserByUsername,
+  findUserForLogin,
+};
