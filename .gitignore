@@ -1,24 +1,24 @@
-
-
-
+# ==========================================
+# Dependencies
+# ==========================================
 
 node_modules/
 .pnp/
 .pnp.js
 
 
-
-
-
+# ==========================================
+# Environment Variables / Secrets
+# ==========================================
 
 .env
 .env.*
 !.env.example
 
 
-
-
-
+# ==========================================
+# Build Output
+# ==========================================
 
 dist/
 build/
@@ -27,24 +27,45 @@ out/
 *.tsbuildinfo
 
 
+# ==========================================
+# User Projects
+# ==========================================
 
-
-
-
-
+# User-created Online IDE projects
 projects/
 
-
+# Uploaded/generated user files
 uploads/
 storage/
 
 
+# ==========================================
+# Prisma
+# ==========================================
+
+# Prisma generated client
+src/generated/prisma/
+
+# If Prisma generated client is ever placed
+# at the project root
+generated/prisma/
+
+# Prisma local generated files
+.prisma/
+
+# DO NOT ignore:
+# prisma/schema.prisma
+# prisma/migrations/
+# prisma.config.ts
 
 
-
+# ==========================================
+# Logs
+# ==========================================
 
 logs/
 *.log
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -53,18 +74,18 @@ lerna-debug.log*
 .pnpm-debug.log*
 
 
-
-
-
+# ==========================================
+# Test Coverage
+# ==========================================
 
 coverage/
 *.lcov
 .nyc_output/
 
 
-
-
-
+# ==========================================
+# Caches
+# ==========================================
 
 .cache/
 .parcel-cache/
@@ -75,57 +96,53 @@ coverage/
 .npm/
 
 
-
-
-
-
-*.tsbuildinfo
-
-
-
-
-
+# ==========================================
+# ESLint / Stylelint
+# ==========================================
 
 .eslintcache
 .stylelintcache
+
 .rpt2_cache/
 .rts2_cache_cjs/
 .rts2_cache_es/
 .rts2_cache_umd/
 
 
-
-
-
+# ==========================================
+# Package Managers
+# ==========================================
 
 .yarn-integrity
+
 .yarn/cache/
 .yarn/unplugged/
 .yarn/build-state.yml
 .yarn/install-state.gz
+
 .pnp.*
 
 
-
-
-
+# ==========================================
+# Node.js Miscellaneous
+# ==========================================
 
 .node_repl_history
 *.tgz
 
 
-
-
-
+# ==========================================
+# Process / Runtime Files
+# ==========================================
 
 *.pid
 *.pid.lock
 *.seed
 
 
-
-
-
+# ==========================================
+# Operating System Files
+# ==========================================
 
 .DS_Store
 Thumbs.db
@@ -133,24 +150,26 @@ ehthumbs.db
 Desktop.ini
 
 
-
-
-
+# ==========================================
+# Editors / IDEs
+# ==========================================
 
 .vscode/*
+
+# Keep shared VS Code configuration
 !.vscode/extensions.json
 !.vscode/settings.json
 
 .idea/
+
 *.swp
 *.swo
 
 
-
-
-
+# ==========================================
+# Temporary / Backup Files
+# ==========================================
 
 *.tmp
 *.temp
 *.bak
-/generated/prisma
