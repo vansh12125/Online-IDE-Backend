@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import {
   registerUserValidation,
   loginUserValidation,
+  deleteUserValidation
 } from "../middleware/validation.middleware";
 import {
   registerUser,
@@ -57,7 +58,7 @@ authRoutes.get("/me", authenticate, (req: Request, res: Response) => {
 });
 
 //Delete Profile
-authRoutes.delete("/me", authenticate, (req: Request, res: Response) => {
+authRoutes.delete("/delete", authenticate,deleteUserValidation, (req: Request, res: Response) => {
   return deleteProfile(req, res);
 });
 

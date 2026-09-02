@@ -1,6 +1,6 @@
 export default class InvalidCredentials extends Error {
-  constructor() {
-    super("Invalid username or password");
+  constructor(message = "Invalid username or password") {
+    super(message);
     this.name = "InvalidCredentials";
   }
 }

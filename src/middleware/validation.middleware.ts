@@ -86,5 +86,18 @@ const loginUserValidation = [
   validateResult,
 ];
 
+const deleteUserValidation = [
+  body("password")
+    .notEmpty()
+    .withMessage("Password cannot be empty")
+    .bail()
+    .isString()
+    .withMessage("Password must be string")
+    .isLength({ min: 8 })
+    .withMessage("Passoword Should be of minimun length, 8"),
 
-export {registerUserValidation,loginUserValidation}
+  validateResult,
+];
+
+
+export {registerUserValidation,loginUserValidation,deleteUserValidation}

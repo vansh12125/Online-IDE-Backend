@@ -7,6 +7,8 @@ import {
   findUserForLogin,
   findExistingUserByUsername,
   findExistingUserByUserId,
+  findExistingUserForDeleteAccount,
+  findAndDeleteUser,
 } from "../repositories/user.repository";
 import {
   EmailAlreadyExist,
@@ -28,6 +30,7 @@ import crypto from "crypto";
 import {
   findTokenBySessionIdAndMarkRevoked,
   findAllTokenByUserIdAndMarkAllRevoked,
+  findAndDeleteUserTokens,
 } from "../repositories/refresh-token.repository";
 
 //constants
@@ -61,10 +64,10 @@ const refreshCookieConfig: CookieOptions = {
 //Register user
 const registerUser = async (req: Request, res: Response) => {
   try {
-    const username: string = req.body.username.toLowerCase();
-    const email: string = req.body.email.toLowerCase();
-    const name: string = req.body.name;
-    const password: string = req.body.password;
+    const username: string = req.body.username.trim().toLowerCase();
+    const email: string = req.body.email.trim().toLowerCase();
+    const name: string = req.body.trim().name;
+    const password: string = req.body.trim().password;
 
     const existing: User | null = await findExistingUserByUsernameOrEmail(
       username,
@@ -121,8 +124,8 @@ const registerUser = async (req: Request, res: Response) => {
 //Login user
 const loginUser = async (req: Request, res: Response) => {
   try {
-    const username: string = req.body.username.toLowerCase();
-    const password: string = req.body.password;
+    const username: string = req.body.username.trim().toLowerCase();
+    const password: string = req.body.password.trim();
 
     const existing = await findUserForLogin(username);
 
@@ -401,10 +404,80 @@ const rotateRefreshToken = async (req: Request, res: Response) => {
 };
 
 //update profile
-const updateProfile = (req: Request, res: Response) => {};
+const updateProfile = async (req: Request, res: Response) => {
+  return res.status(500).json({
+    status: 500,
+    message: "Currently not implemented",
+  } as DataResponse);
+};
 
 //delete profile
-const deleteProfile = (req: Request, res: Response) => {};
+const deleteProfile = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      throw new Error("Authentication Required");
+    }
+
+    const userId: string = req.user.uId;
+    const password: string = req.body.password.trim();
+  
+    const existingUser = await findExistingUserForDeleteAccount(userId);
+
+    if (!existingUser) {
+      throw new UserNotFound();
+    }
+
+    if (!existingUser.password) {
+      return res.status(400).json({
+        status: 400,
+        message: "Password has not been set, First set your password",
+        errors: "Password has not been set, First set your password",
+      } as ErrorResponse);
+    }
+
+    if (!await verifyPassword(password, existingUser.password)) {
+      throw new InvalidCredentials("Incorrect password");
+    }
+
+    await findAndDeleteUserTokens(existingUser.id);
+    await findAndDeleteUser(existingUser.id);
+
+    req.user = undefined;
+    res.clearCookie(accessCookieName, accessCookieConfig);
+    res.clearCookie(refreshCookieName, refreshCookieConfig);
+
+    return res.status(200).json({
+      status: 200,
+      message: "Account Deleted Successfully",
+    } as DataResponse);
+  } catch (error) {
+    if (error instanceof UserNotFound) {
+       return res.status(400).json({
+        status: 400,
+        message: "User not found",
+        errors: error.message,
+      } as ErrorResponse);
+    } else if (error instanceof InvalidCredentials) {
+       return res.status(400).json({
+        status: 400,
+        message: "Incorrect password",
+        errors: "Incorrect password",
+      } as ErrorResponse);
+    } else if (error instanceof Error) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    } else {
+      return res.status(500).json({
+        status: 500,
+        message: "Some Error Occured",
+        errors: "Internal server error",
+      } as ErrorResponse);
+    }
+  }
+};
 
 const genetrateSessionId = (): string => {
   return crypto.randomBytes(32).toString("hex");

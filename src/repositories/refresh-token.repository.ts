@@ -9,7 +9,7 @@ const saveTokenInDb = async (tokenModel: CreateRefreshToken): Promise<void> => {
       sessionId: tokenModel.sessionId,
       expireAt: tokenModel.expireAt,
       userId: tokenModel.userId,
-      revoked:false,
+      revoked: false,
       clientInfo: {
         create: {
           ipAddress: tokenModel.clientInfo.ipAddress,
@@ -85,10 +85,19 @@ const findAllTokenByUserIdAndMarkAllRevoked = async (
   return result.count > 0;
 };
 
+const findAndDeleteUserTokens = async (userId: string) => {
+  await prisma.refreshToken.deleteMany({
+    where: {
+      userId: userId,
+    },
+  });
+};
+
 export {
   saveTokenInDb,
   findTokenBySessionIdAndNotRevoked,
   findTokenUsingHashAndSessionAndRevokeIt,
   findTokenBySessionIdAndMarkRevoked,
   findAllTokenByUserIdAndMarkAllRevoked,
+  findAndDeleteUserTokens
 };

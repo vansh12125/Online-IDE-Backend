@@ -81,6 +81,24 @@ const findExistingUserByUserId = async (userId: string) => {
   });
 };
 
+const findExistingUserForDeleteAccount = async (userId: string) => {
+  return await prisma.user.findFirst({
+    where: { id: userId },
+    select: {
+      id: true,
+      password: true,
+    },
+  });
+};
+
+const findAndDeleteUser = async (userId: string) => {
+  await prisma.user.delete({
+    where: {
+      id: userId,
+    },
+  });
+};
+
 export {
   createUser,
   findExistingUserByUsernameOrEmail,
@@ -88,4 +106,6 @@ export {
   findExistingUserByUsername,
   findUserForLogin,
   findExistingUserByUserId,
+  findExistingUserForDeleteAccount,
+  findAndDeleteUser
 };
