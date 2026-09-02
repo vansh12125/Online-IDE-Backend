@@ -10,6 +10,8 @@ import {
   deleteProfile,
   getUserProfile,
   updateProfile,
+  logoutUser,
+  logoutUserAllSession
 } from "../controllers/auth.controller";
 import authenticate from "../middleware/jwt-auth.middleware";
 
@@ -32,6 +34,16 @@ authRoutes.post(
     return loginUser(req, res);
   },
 );
+
+//Logout User
+authRoutes.get("/signout",authenticate,(req:Request,res:Response)=>{
+  return logoutUser(req,res);
+})
+
+//Logout User All Sessions
+authRoutes.get("/signout/all",authenticate,(req:Request,res:Response)=>{
+  return logoutUserAllSession(req,res);
+})
 
 //Get Profile
 authRoutes.get("/me", authenticate, (req: Request, res: Response) => {

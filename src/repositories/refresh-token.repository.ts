@@ -35,7 +35,7 @@ const findTokenBySessionIdAndNotRevoked = async (
   });
 };
 
-const findTokenAndRevoke = async (
+const findTokenUsingHashAndSessionAndRevokeIt = async (
   tokenHash: string,
   sessionId: string,
 ): Promise<boolean> => {
@@ -53,4 +53,42 @@ const findTokenAndRevoke = async (
   return result.count > 0;
 };
 
-export { saveTokenInDb, findTokenBySessionIdAndNotRevoked ,findTokenAndRevoke};
+const findTokenBySessionIdAndMarkRevoked = async (
+  sessionId: string,
+): Promise<boolean> => {
+  const result = await prisma.refreshToken.updateMany({
+    where: {
+      sessionId,
+      revoked: false,
+    },
+    data: {
+      revoked: true,
+    },
+  });
+
+  return result.count > 0;
+};
+
+const findAllTokenByUserIdAndMarkAllRevoked = async (
+  userId: string,
+): Promise<boolean> => {
+  const result = await prisma.refreshToken.updateMany({
+    where: {
+      userId,
+      revoked: false,
+    },
+    data: {
+      revoked: true,
+    },
+  });
+
+  return result.count > 0;
+};
+
+export {
+  saveTokenInDb,
+  findTokenBySessionIdAndNotRevoked,
+  findTokenUsingHashAndSessionAndRevokeIt,
+  findTokenBySessionIdAndMarkRevoked,
+  findAllTokenByUserIdAndMarkAllRevoked,
+};

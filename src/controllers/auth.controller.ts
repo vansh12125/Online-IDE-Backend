@@ -22,6 +22,7 @@ import {
   saveToken,
 } from "../services/jwt-auth.service";
 import crypto from "crypto";
+import { findTokenBySessionIdAndMarkRevoked,findAllTokenByUserIdAndMarkAllRevoked } from "../repositories/refresh-token.repository";
 
 //constants
 const toBoolean = (val: any) => val === "true";
@@ -169,9 +170,99 @@ const loginUser = async (req: Request, res: Response) => {
         errors: "Invalid username or password",
       } as ErrorResponse);
     } else if (error instanceof Error) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    } else {
       return res.status(500).json({
         status: 500,
         message: "Some Error Occured",
+        errors: "Internal server error",
+      } as ErrorResponse);
+    }
+  }
+};
+
+//Logout User
+const logoutUser = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: 401,
+        message: "Authentication Required",
+        errors: "Authentication Required",
+      } as ErrorResponse);
+    }
+
+    const sessionId: string = req.user.sId;
+
+    const tokenUpdated: boolean =
+      await findTokenBySessionIdAndMarkRevoked(sessionId);
+
+    if (!tokenUpdated) {
+      throw new Error("Bad Request");
+    }
+
+    req.user = undefined;
+    res.clearCookie(accessCookieName, accessCookieConfig);
+    res.clearCookie(refreshCookieName, refreshCookieConfig);
+
+    return res.status(200).json({
+      status: 200,
+      message: "Logged out successfull",
+    } as DataResponse);
+  } catch (error) {
+    if (error instanceof Error) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    } else {
+      return res.status(500).json({
+        status: 500,
+        message: "Some Error Occured",
+        errors: "Internal server error",
+      } as ErrorResponse);
+    }
+  }
+};
+
+//Logout User All Session
+const logoutUserAllSession = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: 401,
+        message: "Authentication Required",
+        errors: "Authentication Required",
+      } as ErrorResponse);
+    }
+
+    const userId:string=req.user.uId;
+
+    const updated:boolean=await findAllTokenByUserIdAndMarkAllRevoked(userId);
+
+    if (!updated) {
+      throw new Error("Bad Request");
+    }
+
+    req.user = undefined;
+    res.clearCookie(accessCookieName, accessCookieConfig);
+    res.clearCookie(refreshCookieName, refreshCookieConfig);
+
+    return res.status(200).json({
+      status: 200,
+      message: "Logged out all session successfull",
+    } as DataResponse);
+
+  } catch (error) {
+     if (error instanceof Error) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
         errors: error.message,
       } as ErrorResponse);
     } else {
@@ -187,6 +278,14 @@ const loginUser = async (req: Request, res: Response) => {
 //Get user profile
 const getUserProfile = async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: 401,
+        message: "Authentication Required",
+        errors: "Authentication Required",
+      } as ErrorResponse);
+    }
+
     const userId: string = req.user.uId;
 
     const user: User | null = await findExistingUserByUserId(userId);
@@ -208,9 +307,9 @@ const getUserProfile = async (req: Request, res: Response) => {
         errors: "User not found",
       } as ErrorResponse);
     } else if (error instanceof Error) {
-      return res.status(500).json({
-        status: 500,
-        message: "Some Error Occured",
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
         errors: error.message,
       } as ErrorResponse);
     } else {
@@ -239,4 +338,6 @@ export {
   getUserProfile,
   updateProfile,
   deleteProfile,
+  logoutUser,
+  logoutUserAllSession
 };

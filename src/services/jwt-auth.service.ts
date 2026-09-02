@@ -3,7 +3,7 @@ import crypto from "crypto";
 import {
   saveTokenInDb,
   findTokenBySessionIdAndNotRevoked,
-  findTokenAndRevoke,
+  findTokenUsingHashAndSessionAndRevokeIt,
 } from "../repositories/refresh-token.repository";
 import { ClientInfo, RefreshToken } from "../types";
 import { InvalidTokenError } from "../errors";
@@ -129,7 +129,7 @@ const verifyRefreshToken = async (oldRefreshToken: string) => {
   const sessionId: string = oldPayload.sId;
   const oldHash: string = hashToken(oldRefreshToken);
 
-  const oldData: boolean = await findTokenAndRevoke(oldHash, sessionId);
+  const oldData: boolean = await findTokenUsingHashAndSessionAndRevokeIt(oldHash, sessionId);
 
   if (!oldData) {
     throw new InvalidTokenError("Invalid refresh token");
