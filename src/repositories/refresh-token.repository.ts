@@ -9,7 +9,7 @@ const saveTokenInDb = async (tokenModel: CreateRefreshToken): Promise<void> => {
       sessionId: tokenModel.sessionId,
       expireAt: tokenModel.expireAt,
       userId: tokenModel.userId,
-
+      revoked:false,
       clientInfo: {
         create: {
           ipAddress: tokenModel.clientInfo.ipAddress,

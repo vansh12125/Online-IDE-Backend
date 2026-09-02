@@ -13,6 +13,7 @@ import {
   UserNotFound,
   UsernameAlreadyExist,
   InvalidCredentials,
+  InvalidTokenError,
 } from "../errors";
 import { DataResponse, ErrorResponse, getClientInfo } from "../utils";
 import { hashPassword, verifyPassword } from "../services/bcrypt.service";
@@ -20,9 +21,14 @@ import {
   generateAccessToken,
   generateRefreshToken,
   saveToken,
+  TokenPayload,
+  verifyRefreshToken,
 } from "../services/jwt-auth.service";
 import crypto from "crypto";
-import { findTokenBySessionIdAndMarkRevoked,findAllTokenByUserIdAndMarkAllRevoked } from "../repositories/refresh-token.repository";
+import {
+  findTokenBySessionIdAndMarkRevoked,
+  findAllTokenByUserIdAndMarkAllRevoked,
+} from "../repositories/refresh-token.repository";
 
 //constants
 const toBoolean = (val: any) => val === "true";
@@ -241,9 +247,10 @@ const logoutUserAllSession = async (req: Request, res: Response) => {
       } as ErrorResponse);
     }
 
-    const userId:string=req.user.uId;
+    const userId: string = req.user.uId;
 
-    const updated:boolean=await findAllTokenByUserIdAndMarkAllRevoked(userId);
+    const updated: boolean =
+      await findAllTokenByUserIdAndMarkAllRevoked(userId);
 
     if (!updated) {
       throw new Error("Bad Request");
@@ -257,9 +264,8 @@ const logoutUserAllSession = async (req: Request, res: Response) => {
       status: 200,
       message: "Logged out all session successfull",
     } as DataResponse);
-
   } catch (error) {
-     if (error instanceof Error) {
+    if (error instanceof Error) {
       return res.status(400).json({
         status: 400,
         message: error.message,
@@ -322,6 +328,78 @@ const getUserProfile = async (req: Request, res: Response) => {
   }
 };
 
+//Rotate Refresh token
+const rotateRefreshToken = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      throw new Error("Authentication Required");
+    }
+
+    const oldRefreshToken: string | undefined | null =
+      req.cookies[refreshCookieName];
+
+    if (!oldRefreshToken) {
+      throw new Error("Authentication Required");
+    }
+
+    const oldVerified: TokenPayload = await verifyRefreshToken(oldRefreshToken);
+
+    if (!oldVerified) {
+      throw new Error("Bad Request");
+    }
+
+    const newAccessToken: string = generateAccessToken(
+      oldVerified.uid,
+      oldVerified.username,
+      oldVerified.sId,
+    );
+    const newRefreshToken: string = generateRefreshToken(
+      oldVerified.uid,
+      oldVerified.username,
+      oldVerified.sId,
+    );
+
+    res.cookie(accessCookieName, newAccessToken, accessCookieConfig);
+    res.cookie(refreshCookieName, newRefreshToken, refreshCookieConfig);
+
+    await saveToken({
+      userId: oldVerified.uid,
+      sessionId: oldVerified.sId,
+      token: newRefreshToken,
+      clientInfo: getClientInfo(req),
+    });
+
+    res.status(200).json({
+      status: 200,
+      message: "Token Refreshed",
+    } as DataResponse);
+  } catch (error) {
+    res.clearCookie(accessCookieName, accessCookieConfig);
+    res.clearCookie(refreshCookieName, refreshCookieConfig);
+
+    if (error instanceof InvalidTokenError) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    }
+    if (error instanceof Error) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    }
+
+    return res.status(500).json({
+      status: 500,
+      message: "Some error occured",
+      errors: "Internal server error",
+    } as ErrorResponse);
+  }
+};
+
 //update profile
 const updateProfile = (req: Request, res: Response) => {};
 
@@ -339,5 +417,6 @@ export {
   updateProfile,
   deleteProfile,
   logoutUser,
-  logoutUserAllSession
+  logoutUserAllSession,
+  rotateRefreshToken,
 };

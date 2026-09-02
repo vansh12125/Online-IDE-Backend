@@ -11,7 +11,8 @@ import {
   getUserProfile,
   updateProfile,
   logoutUser,
-  logoutUserAllSession
+  logoutUserAllSession,
+  rotateRefreshToken,
 } from "../controllers/auth.controller";
 import authenticate from "../middleware/jwt-auth.middleware";
 
@@ -36,14 +37,19 @@ authRoutes.post(
 );
 
 //Logout User
-authRoutes.get("/signout",authenticate,(req:Request,res:Response)=>{
-  return logoutUser(req,res);
-})
+authRoutes.get("/signout", authenticate, (req: Request, res: Response) => {
+  return logoutUser(req, res);
+});
 
 //Logout User All Sessions
-authRoutes.get("/signout/all",authenticate,(req:Request,res:Response)=>{
-  return logoutUserAllSession(req,res);
-})
+authRoutes.get("/signout/all", authenticate, (req: Request, res: Response) => {
+  return logoutUserAllSession(req, res);
+});
+
+//Rotate Refresh Token
+authRoutes.post("/refresh", authenticate, (req: Request, res: Response) => {
+  return rotateRefreshToken(req, res);
+});
 
 //Get Profile
 authRoutes.get("/me", authenticate, (req: Request, res: Response) => {
