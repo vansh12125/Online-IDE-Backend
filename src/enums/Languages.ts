@@ -5,4 +5,4 @@ enum Languages {
   NEXT = "NEXT",
 }
 
-export type {Languages as default}
+export {Languages as default}

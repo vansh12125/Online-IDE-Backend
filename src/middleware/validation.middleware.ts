@@ -2,6 +2,7 @@ import { body, validationResult, Result } from "express-validator";
 import type { ValidationError } from "express-validator";
 import type { Request, Response, NextFunction } from "express";
 import { ErrorResponse } from "../utils";
+import { Languages } from "../enums";
 
 async function validateResult(req: Request, res: Response, next: NextFunction) {
   const errors: Result<ValidationError> = validationResult(req);
@@ -15,6 +16,8 @@ async function validateResult(req: Request, res: Response, next: NextFunction) {
 
   next();
 }
+
+//User Validation
 
 const registerUserValidation = [
   body("username")
@@ -99,5 +102,26 @@ const deleteUserValidation = [
   validateResult,
 ];
 
+//Project Validation
 
-export {registerUserValidation,loginUserValidation,deleteUserValidation}
+const createProjectValidation = [
+  body("projectName")
+    .trim()
+    .notEmpty()
+    .withMessage("Project name is required")
+    .bail()
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Project name must be between 1 and 50 characters"),
+
+  body("language")
+    .trim()
+    .notEmpty()
+    .withMessage("Language is required")
+    .bail()
+    .isIn(Object.values(Languages))
+    .withMessage("Invalid language"),
+
+  validateResult,
+];
+
+export {registerUserValidation,loginUserValidation,deleteUserValidation,createProjectValidation}
