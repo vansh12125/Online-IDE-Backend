@@ -7,11 +7,17 @@ import {
   deleteProject,
   getProjectById,
   getProjectTree,
-  createFile
+  createFile,
+  updateFile,
+  deleteFile,
+  renameFile
 } from "../controllers/projects.controller";
 import {
   createProjectValidation,
   createFileValidation,
+  updateFileValidation,
+  deleteFileValidation,
+  renameFileValidation
 } from "../middleware/validation.middleware";
 
 const projectRoutes: Router = Router();
@@ -65,6 +71,36 @@ projectRoutes.post(
   createFileValidation,
   (req: Request, res: Response) => {
     createFile(req, res);
+  },
+);
+
+//Update File in project
+projectRoutes.patch(
+  "/:projectId/files",
+  authenticate,
+  updateFileValidation,
+  (req: Request, res: Response) => {
+    updateFile(req, res);
+  },
+);
+
+//Delete File in project
+projectRoutes.delete(
+  "/:projectId/files",
+  authenticate,
+  deleteFileValidation,
+  (req: Request, res: Response) => {
+    deleteFile(req, res);
+  },
+);
+
+//Rename File/Folder in project
+projectRoutes.patch(
+  "/:projectId/files/rename",
+  authenticate,
+  renameFileValidation,
+  (req: Request, res: Response) => {
+    renameFile(req, res);
   },
 );
 

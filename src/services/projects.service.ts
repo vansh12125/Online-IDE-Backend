@@ -42,10 +42,18 @@ const createProjectInServer = async (projectId: string, language: string) => {
 const deleteProjectFromServer = async (projectId: string) => {
   const folderPath: string = `./projects/${projectId}`;
 
-  await fs.rm(folderPath, {
-    recursive: true,
-    force: false,
-  });
+  try {
+    await fs.rm(folderPath, {
+      recursive: true,
+      force: false,
+    });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error("File or folder not found");
+    }
+
+    throw error;
+  }
 };
 
 const getProjectTreeFromServer = async (projectId: string) => {
@@ -74,6 +82,67 @@ const createFileInServer = async (
 
   await fs.mkdir(path.dirname(fullPath), { recursive: true });
   await fs.writeFile(fullPath, content ?? "");
+};
+
+const updateFileInServer = async (
+  projectId: string,
+  filePath: string,
+  content: string,
+) => {
+  const folderPath = `./projects/${projectId}`;
+  const fullPath = path.join(folderPath, filePath);
+
+  await fs.writeFile(fullPath, content);
+};
+
+const deleteFileInServer = async (projectId: string, filePath: string) => {
+  const folderPath = `./projects/${projectId}`;
+  const fullPath = path.join(folderPath, filePath);
+
+  try {
+    await fs.rm(fullPath, {
+      recursive: true,
+      force: false,
+    });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error("File or folder not found");
+    }
+
+    throw error;
+  }
+};
+
+const renameFileInServer = async (
+  projectId: string,
+  oldPath: string,
+  newPath: string,
+) => {
+  const folderPath = `./projects/${projectId}`;
+
+  const oldFullPath = path.join(folderPath, oldPath);
+  const newFullPath = path.join(folderPath, newPath);
+
+  try {
+    await fs.access(oldFullPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error("File or folder to rename not found");
+    }
+
+    throw error;
+  }
+
+  try {
+    await fs.access(newFullPath);
+    throw new Error("A file or folder with this name already exists");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+
+  await fs.rename(oldFullPath, newFullPath);
 };
 
 const executeComamnd = async (cmd: string) => {
@@ -106,4 +175,7 @@ export {
   deleteProjectFromServer,
   getProjectTreeFromServer,
   createFileInServer,
+  updateFileInServer,
+  deleteFileInServer,
+  renameFileInServer,
 };

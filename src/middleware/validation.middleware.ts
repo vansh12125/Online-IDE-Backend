@@ -153,10 +153,112 @@ const createFileValidation = [
   validateResult,
 ];
 
+const updateFileValidation = [
+  body("path")
+    .trim()
+    .notEmpty()
+    .withMessage("Path is required")
+    .bail()
+    .isString()
+    .withMessage("Path must be a string")
+    .bail()
+    .not()
+    .contains("..")
+    .withMessage("Invalid path")
+    .bail()
+    .custom((path) => {
+      if (path.startsWith("/") || path.startsWith("\\")) {
+        throw new Error("Path must be relative");
+      }
+
+      return true;
+    }),
+
+  body("content")
+    .exists()
+    .withMessage("Content is required")
+    .bail()
+    .isString()
+    .withMessage("Content must be a string"),
+
+  validateResult,
+];
+
+const deleteFileValidation = [
+  body("path")
+    .trim()
+    .notEmpty()
+    .withMessage("Path is required")
+    .bail()
+    .isString()
+    .withMessage("Path must be a string")
+    .bail()
+    .not()
+    .contains("..")
+    .withMessage("Invalid path")
+    .bail()
+    .custom((path) => {
+      if (path.startsWith("/") || path.startsWith("\\")) {
+        throw new Error("Path must be relative");
+      }
+
+      return true;
+    }),
+
+  validateResult,
+];
+
+const renameFileValidation = [
+  body("oldPath")
+    .trim()
+    .notEmpty()
+    .withMessage("Old path is required")
+    .bail()
+    .isString()
+    .withMessage("Old path must be a string")
+    .bail()
+    .not()
+    .contains("..")
+    .withMessage("Invalid old path")
+    .bail()
+    .custom((path) => {
+      if (path.startsWith("/") || path.startsWith("\\")) {
+        throw new Error("Old path must be relative");
+      }
+
+      return true;
+    }),
+
+  body("newPath")
+    .trim()
+    .notEmpty()
+    .withMessage("New path is required")
+    .bail()
+    .isString()
+    .withMessage("New path must be a string")
+    .bail()
+    .not()
+    .contains("..")
+    .withMessage("Invalid new path")
+    .bail()
+    .custom((path) => {
+      if (path.startsWith("/") || path.startsWith("\\")) {
+        throw new Error("New path must be relative");
+      }
+
+      return true;
+    }),
+
+  validateResult,
+];
+
 export {
   registerUserValidation,
   loginUserValidation,
   deleteUserValidation,
   createProjectValidation,
-  createFileValidation
+  createFileValidation,
+  updateFileValidation,
+  deleteFileValidation,
+  renameFileValidation
 };

@@ -9,6 +9,9 @@ import {
   deleteProjectFromServer,
   getProjectTreeFromServer,
   createFileInServer,
+  updateFileInServer,
+  deleteFileInServer,
+  renameFileInServer
 } from "../services/projects.service";
 import {
   SaveProjectInDb,
@@ -325,6 +328,177 @@ const createFile = async (req: Request, res: Response) => {
   }
 };
 
+//Update File
+const updateFile = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: 401,
+        message: "Authentication Required",
+        errors: "Authentication Required",
+      } as ErrorResponse);
+    }
+    const projectId = req.params.projectId;
+
+    if (typeof projectId !== "string") {
+      throw new Error("Invalid project id");
+    }
+
+    const project: Project | null = await getProjectByIdFromDb(
+      projectId,
+      req.user.uId,
+    );
+
+    if (!project) {
+      throw new ProjectNotFound();
+    }
+
+    const path: string = req.body.path.trim();
+    const content: string = req.body.content;
+
+    await updateFileInServer(project.id, path, content);
+
+    return res
+      .status(200)
+      .json({ status: 200, message: "File content saved" } as DataResponse);
+  } catch (error) {
+    if (error instanceof ProjectNotFound) {
+      return res.status(404).json({
+        status: 404,
+        message: "Project not found",
+        errors: "Project not found",
+      } as ErrorResponse);
+    } else if (error instanceof Error) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    } else {
+      return res.status(500).json({
+        status: 500,
+        message: "Some Error Occured",
+        errors: "Internal server error",
+      } as ErrorResponse);
+    }
+  }
+};
+
+//Delete File
+const deleteFile = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: 401,
+        message: "Authentication Required",
+        errors: "Authentication Required",
+      } as ErrorResponse);
+    }
+    const projectId = req.params.projectId;
+
+    if (typeof projectId !== "string") {
+      throw new Error("Invalid project id");
+    }
+
+    const project: Project | null = await getProjectByIdFromDb(
+      projectId,
+      req.user.uId,
+    );
+
+    if (!project) {
+      throw new ProjectNotFound();
+    }
+
+    const path: string = req.body.path.trim();
+
+    await deleteFileInServer(project.id,path);
+
+    return res.status(200).json({
+      status:200,
+      message:"File deleted successfully"
+    } as DataResponse)
+
+  } catch (error) {
+    if (error instanceof ProjectNotFound) {
+      return res.status(404).json({
+        status: 404,
+        message: "Project not found",
+        errors: "Project not found",
+      } as ErrorResponse);
+    } else if (error instanceof Error) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    } else {
+      return res.status(500).json({
+        status: 500,
+        message: "Some Error Occured",
+        errors: "Internal server error",
+      } as ErrorResponse);
+    }
+  }
+};
+
+// Rename File/Folder
+const renameFile = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: 401,
+        message: "Authentication Required",
+        errors: "Authentication Required",
+      } as ErrorResponse);
+    }
+
+    const projectId = req.params.projectId;
+
+    if (typeof projectId !== "string") {
+      throw new Error("Invalid project id");
+    }
+
+    const project: Project | null = await getProjectByIdFromDb(
+      projectId,
+      req.user.uId,
+    );
+
+    if (!project) {
+      throw new ProjectNotFound();
+    }
+
+    const oldPath: string = req.body.oldPath.trim();
+    const newPath: string = req.body.newPath.trim();
+
+    await renameFileInServer(project.id, oldPath, newPath);
+
+    return res.status(200).json({
+      status: 200,
+      message: "File or folder renamed successfully",
+    } as DataResponse);
+  } catch (error) {
+    if (error instanceof ProjectNotFound) {
+      return res.status(404).json({
+        status: 404,
+        message: "Project not found",
+        errors: "Project not found",
+      } as ErrorResponse);
+    } else if (error instanceof Error) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    } else {
+      return res.status(500).json({
+        status: 500,
+        message: "Some Error Occured",
+        errors: "Internal server error",
+      } as ErrorResponse);
+    }
+  }
+};
+
 export {
   createProject,
   getAllProjectsOfUser,
@@ -332,4 +506,7 @@ export {
   deleteProject,
   getProjectTree,
   createFile,
+  updateFile,
+  deleteFile,
+  renameFile
 };
