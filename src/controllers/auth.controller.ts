@@ -66,8 +66,8 @@ const registerUser = async (req: Request, res: Response) => {
   try {
     const username: string = req.body.username.trim().toLowerCase();
     const email: string = req.body.email.trim().toLowerCase();
-    const name: string = req.body.trim().name;
-    const password: string = req.body.trim().password;
+    const name: string = req.body.name.trim();
+    const password: string = req.body.password.trim();
 
     const existing: User | null = await findExistingUserByUsernameOrEmail(
       username,

@@ -77,6 +77,7 @@ const findExistingUserByUserId = async (userId: string) => {
       isVerified: true,
       createdAt: true,
       updatedAt: true,
+      projects:true
     },
   });
 };

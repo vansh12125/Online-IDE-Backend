@@ -2,7 +2,7 @@ import { body, validationResult, Result } from "express-validator";
 import type { ValidationError } from "express-validator";
 import type { Request, Response, NextFunction } from "express";
 import { ErrorResponse } from "../utils";
-import { Languages } from "../enums";
+import { Languages } from "../generated/prisma/enums";
 
 async function validateResult(req: Request, res: Response, next: NextFunction) {
   const errors: Result<ValidationError> = validationResult(req);

@@ -1,8 +1,9 @@
-import { Languages } from "../enums";
+import { Languages } from "../generated/prisma/enums";
 
-interface CreateProjectReques {
+interface CreateProjectRequest {
   name: string;
   language: Languages;
+  userId:string;
 }
 
 interface Project {
@@ -14,4 +15,4 @@ interface Project {
   updatedAt: Date;
 }
 
-export type { CreateProjectReques, Project };
+export type { CreateProjectRequest, Project };

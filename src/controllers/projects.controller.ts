@@ -1,10 +1,19 @@
 import type { Request, Response } from "express";
-import User from "../types";
+import User, { Project, CreateProjectRequest } from "../types";
 import { findExistingUserByUserId } from "../repositories/user.repository";
-import { UserNotFound, InvalidCredentials } from "../errors";
+import { UserNotFound, InvalidCredentials, ProjectNotFound } from "../errors";
 import { DataResponse, ErrorResponse } from "../utils";
-import { Languages } from "../enums";
-import { createProjectInServer } from "../services/projects.service";
+import { Languages } from "../generated/prisma/enums";
+import {
+  createProjectInServer,
+  deleteProjectFromServer,
+} from "../services/projects.service";
+import {
+  SaveProjectInDb,
+  deleteProjectFromDb,
+  getAllProjectsOfUserFromDb,
+  getProjectByIdFromDb,
+} from "../repositories/project.repository";
 
 //Create Project
 const createProject = async (req: Request, res: Response) => {
@@ -20,15 +29,28 @@ const createProject = async (req: Request, res: Response) => {
     const projectName: string = req.body.projectName.trim();
     const language: string = req.body.language;
 
-    await createProjectInServer(projectName, language);
+    const projectData = await SaveProjectInDb({
+      userId: req.user.uId,
+      name: projectName,
+      language: language,
+    } as CreateProjectRequest);
 
-    res
-      .status(201)
-      .json({
-        status: 201,
-        message: "Project Created",
-        data: language,
-      } as DataResponse);
+    try {
+      await createProjectInServer(projectData.id, language);
+    } catch (error) {
+      await deleteProjectFromDb(projectData.id);
+      throw error;
+    }
+
+    res.status(201).json({
+      status: 201,
+      message: "Project Created",
+      data: {
+        id: projectData.id,
+        language: projectData.language,
+        name: projectData.name,
+      } as Project,
+    } as DataResponse);
   } catch (error) {
     if (error instanceof Error) {
       return res.status(400).json({
@@ -56,6 +78,14 @@ const getAllProjectsOfUser = async (req: Request, res: Response) => {
         errors: "Authentication Required",
       } as ErrorResponse);
     }
+
+    const allProjects = await getAllProjectsOfUserFromDb(req.user.uId);
+
+    return res.status(200).json({
+      status: 200,
+      message: `${allProjects.length} Projects Found`,
+      data: allProjects,
+    } as DataResponse);
   } catch (error) {
     if (error instanceof Error) {
       return res.status(400).json({
@@ -83,7 +113,48 @@ const getProjectById = async (req: Request, res: Response) => {
         errors: "Authentication Required",
       } as ErrorResponse);
     }
-  } catch (error) {}
+
+    const projectId = req.params.projectId;
+
+    if (typeof projectId !== "string") {
+      throw new Error("Invalid project id");
+    }
+
+    const project: Project | null = await getProjectByIdFromDb(
+      projectId,
+      req.user.uId,
+    );
+
+    if (!project) {
+      throw new ProjectNotFound();
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: "Project found",
+      data: project,
+    } as DataResponse);
+  } catch (error) {
+    if (error instanceof ProjectNotFound) {
+      return res.status(404).json({
+        status: 404,
+        message: "Project not found",
+        errors: "Project not found",
+      } as ErrorResponse);
+    } else if (error instanceof Error) {
+      return res.send(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    } else {
+      return res.status(500).json({
+        status: 500,
+        message: "Some Error Occured",
+        errors: "Internal server error",
+      } as ErrorResponse);
+    }
+  }
 };
 
 //Delete Project By Id
@@ -96,7 +167,49 @@ const deleteProject = async (req: Request, res: Response) => {
         errors: "Authentication Required",
       } as ErrorResponse);
     }
-  } catch (error) {}
+    const projectId = req.params.projectId;
+
+    if (typeof projectId !== "string") {
+      throw new Error("Invalid project id");
+    }
+
+    const project: Project | null = await getProjectByIdFromDb(
+      projectId,
+      req.user.uId,
+    );
+
+    if (!project) {
+      throw new ProjectNotFound();
+    }
+
+    await deleteProjectFromServer(projectId);
+    await deleteProjectFromDb(projectId);
+
+    return res.status(200).json({
+      status: 200,
+      message: "Project deleted successfully",
+    } as DataResponse);
+  } catch (error) {
+    if (error instanceof ProjectNotFound) {
+      return res.status(404).json({
+        status: 404,
+        message: "Project not found",
+        errors: "Project not found",
+      } as ErrorResponse);
+    } else if (error instanceof Error) {
+      return res.send(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    } else {
+      return res.status(500).json({
+        status: 500,
+        message: "Some Error Occured",
+        errors: "Internal server error",
+      } as ErrorResponse);
+    }
+  }
 };
 
 export { createProject, getAllProjectsOfUser, getProjectById, deleteProject };
