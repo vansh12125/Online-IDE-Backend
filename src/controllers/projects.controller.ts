@@ -7,6 +7,8 @@ import { Languages } from "../generated/prisma/enums";
 import {
   createProjectInServer,
   deleteProjectFromServer,
+  getProjectTreeFromServer,
+  createFileInServer,
 } from "../services/projects.service";
 import {
   SaveProjectInDb,
@@ -212,4 +214,122 @@ const deleteProject = async (req: Request, res: Response) => {
   }
 };
 
-export { createProject, getAllProjectsOfUser, getProjectById, deleteProject };
+//Get Project Tree
+const getProjectTree = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: 401,
+        message: "Authentication Required",
+        errors: "Authentication Required",
+      } as ErrorResponse);
+    }
+    const projectId = req.params.projectId;
+
+    if (typeof projectId !== "string") {
+      throw new Error("Invalid project id");
+    }
+
+    const project: Project | null = await getProjectByIdFromDb(
+      projectId,
+      req.user.uId,
+    );
+
+    if (!project) {
+      throw new ProjectNotFound();
+    }
+
+    const data = await getProjectTreeFromServer(project.id);
+
+    return res.status(200).json({
+      status: 200,
+      message: "Project Structure",
+      data: data,
+    } as DataResponse);
+  } catch (error) {
+    if (error instanceof ProjectNotFound) {
+      return res.status(404).json({
+        status: 404,
+        message: "Project not found",
+        errors: "Project not found",
+      } as ErrorResponse);
+    } else if (error instanceof Error) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    } else {
+      return res.status(500).json({
+        status: 500,
+        message: "Some Error Occured",
+        errors: "Internal server error",
+      } as ErrorResponse);
+    }
+  }
+};
+
+//Create File
+const createFile = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: 401,
+        message: "Authentication Required",
+        errors: "Authentication Required",
+      } as ErrorResponse);
+    }
+    const projectId = req.params.projectId;
+
+    if (typeof projectId !== "string") {
+      throw new Error("Invalid project id");
+    }
+
+    const project: Project | null = await getProjectByIdFromDb(
+      projectId,
+      req.user.uId,
+    );
+
+    if (!project) {
+      throw new ProjectNotFound();
+    }
+
+    const path: string = req.body.path.trim();
+    const content: string | undefined = req.body.content;
+
+    await createFileInServer(project.id, path, content);
+
+    return res
+      .status(201)
+      .json({ status: 201, message: "File created" } as DataResponse);
+  } catch (error) {
+    if (error instanceof ProjectNotFound) {
+      return res.status(404).json({
+        status: 404,
+        message: "Project not found",
+        errors: "Project not found",
+      } as ErrorResponse);
+    } else if (error instanceof Error) {
+      return res.status(400).json({
+        status: 400,
+        message: error.message,
+        errors: error.message,
+      } as ErrorResponse);
+    } else {
+      return res.status(500).json({
+        status: 500,
+        message: "Some Error Occured",
+        errors: "Internal server error",
+      } as ErrorResponse);
+    }
+  }
+};
+
+export {
+  createProject,
+  getAllProjectsOfUser,
+  getProjectById,
+  deleteProject,
+  getProjectTree,
+  createFile,
+};

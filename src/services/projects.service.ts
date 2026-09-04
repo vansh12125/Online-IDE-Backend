@@ -2,6 +2,9 @@ import { Languages } from "../generated/prisma/enums";
 import { LanguagesFileContent } from "../enums";
 import { exec } from "child_process";
 import fs from "fs/promises";
+import dirTree from "directory-tree";
+import { ProjectNotFound } from "../errors";
+import path from "path";
 
 const createProjectInServer = async (projectId: string, language: string) => {
   await fs.mkdir("./projects", { recursive: true });
@@ -45,6 +48,34 @@ const deleteProjectFromServer = async (projectId: string) => {
   });
 };
 
+const getProjectTreeFromServer = async (projectId: string) => {
+  const folderPath: string = `./projects/${projectId}`;
+
+  const tree = dirTree(folderPath, {
+    attributes: ["extension", "type"],
+    exclude: /node_modules|\.git|dist|build|\.next/,
+  });
+
+  if (!tree) {
+    throw new ProjectNotFound();
+  }
+
+  await getFileContent(tree);
+  return tree;
+};
+
+const createFileInServer = async (
+  projectId: string,
+  filePath: string,
+  content: string | undefined,
+) => {
+  const folderPath: string = `./projects/${projectId}`;
+  const fullPath: string = path.join(folderPath, filePath);
+
+  await fs.mkdir(path.dirname(fullPath), { recursive: true });
+  await fs.writeFile(fullPath, content ?? "");
+};
+
 const executeComamnd = async (cmd: string) => {
   await new Promise<void>((resolve, reject) => {
     exec(cmd, { cwd: "./projects" }, (error, stdout, stderr) => {
@@ -60,4 +91,19 @@ const executeComamnd = async (cmd: string) => {
   });
 };
 
-export { createProjectInServer,deleteProjectFromServer };
+const getFileContent = async (file: any): Promise<void> => {
+  if (file.type === "file") {
+    file.content = await fs.readFile(file.path, "utf-8");
+    return;
+  }
+  if (file.children) {
+    await Promise.all(file.children.map(getFileContent));
+  }
+};
+
+export {
+  createProjectInServer,
+  deleteProjectFromServer,
+  getProjectTreeFromServer,
+  createFileInServer,
+};

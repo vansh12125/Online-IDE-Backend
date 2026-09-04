@@ -124,4 +124,39 @@ const createProjectValidation = [
   validateResult,
 ];
 
-export {registerUserValidation,loginUserValidation,deleteUserValidation,createProjectValidation}
+const createFileValidation = [
+  body("path")
+    .trim()
+    .notEmpty()
+    .withMessage("Path is required")
+    .bail()
+    .isString()
+    .withMessage("Path must be a string")
+    .bail()
+    .not()
+    .contains("..")
+    .withMessage("Invalid path")
+    .bail()
+    .custom((path) => {
+      if (path.startsWith("/") || path.startsWith("\\")) {
+        throw new Error("Path must be relative");
+      }
+
+      return true;
+    }),
+
+  body("content")
+    .optional({ nullable: true })
+    .isString()
+    .withMessage("Content must be a string"),
+
+  validateResult,
+];
+
+export {
+  registerUserValidation,
+  loginUserValidation,
+  deleteUserValidation,
+  createProjectValidation,
+  createFileValidation
+};
