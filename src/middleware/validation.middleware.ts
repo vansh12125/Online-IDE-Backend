@@ -72,7 +72,7 @@ const loginUserValidation = [
     .withMessage("Username must be string")
     .isLength({ min: 3, max: 25 })
     .withMessage("Username must be between 3 to 25 characters")
-    .matches(/^[a-zA-Z][a-zA-Z0-9_]{3,24}$/)
+    .matches(/^[a-zA-Z][a-zA-Z0-9_]{2,24}$/)
     .withMessage(
       "Username must start with a letter and contain only letters, numbers, or underscores",
     ),
