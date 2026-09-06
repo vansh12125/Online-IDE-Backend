@@ -111,7 +111,12 @@ const createProjectValidation = [
     .withMessage("Project name is required")
     .bail()
     .isLength({ min: 1, max: 50 })
-    .withMessage("Project name must be between 1 and 50 characters"),
+    .withMessage("Project name must be between 1 and 50 characters")
+    .bail()
+    .matches(/^[A-Za-z_][A-Za-z0-9_]*$/)
+    .withMessage(
+      "Project name must start with a letter or underscore and contain only letters, numbers, or underscores",
+    ),
 
   body("language")
     .trim()
@@ -260,5 +265,5 @@ export {
   createFileValidation,
   updateFileValidation,
   deleteFileValidation,
-  renameFileValidation
+  renameFileValidation,
 };
