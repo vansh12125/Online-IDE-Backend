@@ -11,7 +11,7 @@ import {
   createFileInServer,
   updateFileInServer,
   deleteFileInServer,
-  renameFileInServer
+  renameFileInServer,
 } from "../services/projects.service";
 import {
   SaveProjectInDb,
@@ -54,6 +54,8 @@ const createProject = async (req: Request, res: Response) => {
         id: projectData.id,
         language: projectData.language,
         name: projectData.name,
+        createdAt: projectData.createdAt,
+        updatedAt: projectData.updatedAt,
       } as Project,
     } as DataResponse);
   } catch (error) {
@@ -247,7 +249,7 @@ const getProjectTree = async (req: Request, res: Response) => {
     return res.status(200).json({
       status: 200,
       message: "Project Structure",
-      data: data,
+      data: { ...data, projectName: project.name },
     } as DataResponse);
   } catch (error) {
     if (error instanceof ProjectNotFound) {
@@ -411,13 +413,12 @@ const deleteFile = async (req: Request, res: Response) => {
 
     const path: string = req.body.path.trim();
 
-    await deleteFileInServer(project.id,path);
+    await deleteFileInServer(project.id, path);
 
     return res.status(200).json({
-      status:200,
-      message:"File deleted successfully"
-    } as DataResponse)
-
+      status: 200,
+      message: "File deleted successfully",
+    } as DataResponse);
   } catch (error) {
     if (error instanceof ProjectNotFound) {
       return res.status(404).json({
@@ -508,5 +509,5 @@ export {
   createFile,
   updateFile,
   deleteFile,
-  renameFile
+  renameFile,
 };

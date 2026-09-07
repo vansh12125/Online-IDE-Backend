@@ -12,6 +12,8 @@ const SaveProjectInDb = async (createRequest: CreateProjectRequest) => {
       id: true,
       language: true,
       name: true,
+      updatedAt:true,
+      createdAt:true
     },
   });
 };
