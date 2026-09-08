@@ -48,7 +48,7 @@ authRoutes.get("/signout/all", authenticate, (req: Request, res: Response) => {
 });
 
 //Rotate Refresh Token
-authRoutes.post("/refresh", authenticate, (req: Request, res: Response) => {
+authRoutes.post("/refresh", (req: Request, res: Response) => {
   return rotateRefreshToken(req, res);
 });
 
