@@ -1,9 +1,9 @@
 import { Router } from "express";
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import {
   registerUserValidation,
   loginUserValidation,
-  deleteUserValidation
+  deleteUserValidation,
 } from "../middleware/validation.middleware";
 import {
   registerUser,
@@ -14,8 +14,13 @@ import {
   logoutUser,
   logoutUserAllSession,
   rotateRefreshToken,
+  loginOauthUser,
 } from "../controllers/auth.controller";
 import authenticate from "../middleware/jwt-auth.middleware";
+import passport from "passport";
+import { ErrorResponse } from "../utils";
+import { OAuthUser } from "../types";
+import { OAuthProvider } from "../generated/prisma/enums";
 
 const authRoutes: Router = Router();
 
@@ -58,13 +63,67 @@ authRoutes.get("/me", authenticate, (req: Request, res: Response) => {
 });
 
 //Delete Profile
-authRoutes.delete("/delete", authenticate,deleteUserValidation, (req: Request, res: Response) => {
-  return deleteProfile(req, res);
-});
+authRoutes.delete(
+  "/delete",
+  authenticate,
+  deleteUserValidation,
+  (req: Request, res: Response) => {
+    return deleteProfile(req, res);
+  },
+);
 
 //Update Profile
 authRoutes.patch("/me", authenticate, (req: Request, res: Response) => {
   return updateProfile(req, res);
 });
+
+//Login With Google
+authRoutes.get(
+  "/signin/google",
+  async (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
+    })(req, res, next);
+  },
+);
+
+//Google Callback
+authRoutes.get(
+  "/google/callback",
+  (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate(
+      "google",
+      { session: false },
+      async (err: Error | null, googleUser: any, _info?: unknown) => {
+        if (err) {
+          return res.status(500).json({
+            status: 500,
+            message: "Google authentication failed",
+            errors: "Google authentication failed",
+          } as ErrorResponse);
+        }
+        if (!googleUser) {
+          return res.status(401).json({
+            status: 401,
+            message: "Google authentication failed",
+            errors: "Google authentication failed",
+          } as ErrorResponse);
+        }
+        
+
+        const oAuthUser: OAuthUser = {
+          oAuthId: googleUser.oAuthId,
+          email: googleUser.email,
+          name: googleUser.name,
+          isVerified: googleUser.isVerified,
+          provider: OAuthProvider.GOOGLE,
+          avatar: googleUser.avatar,
+        };
+
+        loginOauthUser(req, res, oAuthUser);
+      },
+    )(req, res, next);
+  },
+);
 
 export default authRoutes;

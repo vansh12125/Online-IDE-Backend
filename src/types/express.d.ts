@@ -5,7 +5,13 @@ declare global {
         uId: string;
         username: string;
         sId: string;
-      }|undefined;
+      };
+    }
+
+    interface User {
+      uId: string;
+      username: string;
+      sId: string;
     }
   }
 }

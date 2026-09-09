@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma.config";
 import User from "../types";
+import { OAuthProvider } from "../generated/prisma/enums";
 
 const createUser = async (userData: {
   username: string;
@@ -13,16 +14,6 @@ const createUser = async (userData: {
       name: userData.name,
       username: userData.username,
       password: userData.password,
-    },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      name: true,
-      avatarUrl: true,
-      isVerified: true,
-      createdAt: true,
-      updatedAt: true,
     },
   });
 };
@@ -61,6 +52,11 @@ const findUserForLogin = async (username: string) => {
       id: true,
       username: true,
       password: true,
+      oauthAccounts:{
+        select:{
+          provider:true
+        }
+      },
     },
   });
 };
@@ -77,7 +73,7 @@ const findExistingUserByUserId = async (userId: string) => {
       isVerified: true,
       createdAt: true,
       updatedAt: true,
-      projects:true
+      projects: true,
     },
   });
 };
@@ -100,6 +96,34 @@ const findAndDeleteUser = async (userId: string) => {
   });
 };
 
+const createOauthUser = async (userData: {
+  username: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  provider: OAuthProvider;
+  oAuthId: string;
+}) => {
+  return await prisma.user.create({
+    data: {
+      email: userData.email,
+      name: userData.name,
+      username: userData.username,
+      avatarUrl: userData.avatar ?? "",
+      isVerified: true,
+      oauthAccounts: {
+        create: {
+          provider: userData.provider,
+          providerAccountId: userData.oAuthId,
+        },
+      },
+    },select:{
+       id:true,
+       username:true
+    },
+  });
+};
+
 export {
   createUser,
   findExistingUserByUsernameOrEmail,
@@ -108,5 +132,6 @@ export {
   findUserForLogin,
   findExistingUserByUserId,
   findExistingUserForDeleteAccount,
-  findAndDeleteUser
+  findAndDeleteUser,
+  createOauthUser,
 };

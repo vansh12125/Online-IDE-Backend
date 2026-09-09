@@ -3,3 +3,4 @@ export type { User as default };
 export { LoginRequest, RegisterRequest } from "./auth";
 export { ClientInfo, RefreshToken, CreateRefreshToken } from "./token";
 export { CreateProjectRequest, Project } from "./project";
+export * from "./user";

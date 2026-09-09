@@ -1,5 +1,5 @@
 import type { Request, Response, CookieOptions } from "express";
-import User from "../types";
+import User, { OAuthUser } from "../types";
 import {
   createUser,
   findExistingUserByUsernameOrEmail,
@@ -9,7 +9,12 @@ import {
   findExistingUserByUserId,
   findExistingUserForDeleteAccount,
   findAndDeleteUser,
+  createOauthUser,
 } from "../repositories/user.repository";
+import {
+  findExistingByOauth,
+  linkOauthAccount,
+} from "../repositories/oauth.repository";
 import {
   EmailAlreadyExist,
   UserNotFound,
@@ -131,6 +136,18 @@ const loginUser = async (req: Request, res: Response) => {
 
     if (!existing) {
       throw new UserNotFound();
+    }
+
+    if (!existing.password) {
+      const providers = existing.oauthAccounts.map(
+        (account) => account.provider,
+      );
+
+      return res.status(401).json({
+        status: 401,
+        message: `Please login with ${providers.join(" or ")}`,
+        errors: `Please login with ${providers.join(" or ")}`,
+      } as ErrorResponse);
     }
 
     const verified: boolean = await verifyPassword(password, existing.password);
@@ -420,7 +437,7 @@ const deleteProfile = async (req: Request, res: Response) => {
 
     const userId: string = req.user.uId;
     const password: string = req.body.password.trim();
-  
+
     const existingUser = await findExistingUserForDeleteAccount(userId);
 
     if (!existingUser) {
@@ -435,7 +452,7 @@ const deleteProfile = async (req: Request, res: Response) => {
       } as ErrorResponse);
     }
 
-    if (!await verifyPassword(password, existingUser.password)) {
+    if (!(await verifyPassword(password, existingUser.password))) {
       throw new InvalidCredentials("Incorrect password");
     }
 
@@ -452,13 +469,13 @@ const deleteProfile = async (req: Request, res: Response) => {
     } as DataResponse);
   } catch (error) {
     if (error instanceof UserNotFound) {
-       return res.status(400).json({
+      return res.status(400).json({
         status: 400,
         message: "User not found",
         errors: error.message,
       } as ErrorResponse);
     } else if (error instanceof InvalidCredentials) {
-       return res.status(400).json({
+      return res.status(400).json({
         status: 400,
         message: "Incorrect password",
         errors: "Incorrect password",
@@ -479,6 +496,140 @@ const deleteProfile = async (req: Request, res: Response) => {
   }
 };
 
+//Login with oauth
+const loginOauthUser = async (
+  req: Request,
+  res: Response,
+  oAuthUser: OAuthUser,
+) => {
+  try {
+    const existingUser = await findExistingByOauth(
+      oAuthUser.provider,
+      oAuthUser.oAuthId,
+    );
+
+    if (existingUser) {
+      const sessionId: string = genetrateSessionId();
+      const accessToken: string = generateAccessToken(
+        existingUser.user.id,
+        existingUser.user.username,
+        sessionId,
+      );
+      const refreshToken: string = generateRefreshToken(
+        existingUser.user.id,
+        existingUser.user.username,
+        sessionId,
+      );
+
+      await saveToken({
+        token: refreshToken,
+        userId: existingUser.user.id,
+        clientInfo: getClientInfo(req),
+        sessionId: sessionId,
+      });
+
+      res.cookie(accessCookieName, accessToken, accessCookieConfig);
+      res.cookie(refreshCookieName, refreshToken, refreshCookieConfig);
+
+      return res.redirect(`${frontEndUrl}/oauth/success`);
+    } else {
+      const email: string = oAuthUser.email.toLowerCase();
+      const existingUser = await findExistingUserByEmail(email);
+
+      if (existingUser) {
+        await linkOauthAccount(
+          existingUser.id,
+          oAuthUser.provider,
+          oAuthUser.oAuthId,
+        );
+
+        const sessionId: string = genetrateSessionId();
+
+        const accessToken: string = generateAccessToken(
+          existingUser.id,
+          existingUser.username,
+          sessionId,
+        );
+
+        const refreshToken: string = generateRefreshToken(
+          existingUser.id,
+          existingUser.username,
+          sessionId,
+        );
+
+        await saveToken({
+          token: refreshToken,
+          userId: existingUser.id,
+          clientInfo: getClientInfo(req),
+          sessionId,
+        });
+
+        res.cookie(accessCookieName, accessToken, accessCookieConfig);
+        res.cookie(refreshCookieName, refreshToken, refreshCookieConfig);
+
+        return res.redirect(`${frontEndUrl}/oauth/success`);
+      } else {
+        const username: string = await generateUsername(oAuthUser.email);
+        const createdUser = await createOauthUser({
+          email: email,
+          name: oAuthUser.name,
+          avatar: oAuthUser.avatar ?? "",
+          username: username,
+          oAuthId: oAuthUser.oAuthId,
+          provider: oAuthUser.provider,
+        });
+
+        const sessionId: string = genetrateSessionId();
+
+        const accessToken: string = generateAccessToken(
+          createdUser.id,
+          createdUser.username,
+          sessionId,
+        );
+
+        const refreshToken: string = generateRefreshToken(
+          createdUser.id,
+          createdUser.username,
+          sessionId,
+        );
+
+        await saveToken({
+          token: refreshToken,
+          userId: createdUser.id,
+          clientInfo: getClientInfo(req),
+          sessionId,
+        });
+
+        res.cookie(accessCookieName, accessToken, accessCookieConfig);
+        res.cookie(refreshCookieName, refreshToken, refreshCookieConfig);
+
+        return res.redirect(`${frontEndUrl}/oauth/success`);
+      }
+    }
+  } catch (error) {
+    return res.redirect(`${frontEndUrl}/signin?error=true`);
+  }
+};
+
+const generateUsername = async (email: string): Promise<string> => {
+  const emailPrefix = email.split("@")[0];
+
+  if (!emailPrefix) {
+    throw new Error("Invalid email");
+  }
+
+  const baseUsername = emailPrefix.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  let username = baseUsername;
+  let counter = 1;
+
+  while (await findExistingUserByUsername(username)) {
+    username = `${baseUsername}${counter}`;
+    counter++;
+  }
+  return username;
+};
+
 const genetrateSessionId = (): string => {
   return crypto.randomBytes(32).toString("hex");
 };
@@ -492,4 +643,5 @@ export {
   logoutUser,
   logoutUserAllSession,
   rotateRefreshToken,
+  loginOauthUser,
 };

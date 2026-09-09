@@ -14,11 +14,11 @@ datasource db {
 
 //User Table
 model User {
-  id       String @id @default(uuid())
-  username String @unique
+  id       String  @id @default(uuid())
+  username String  @unique
   name     String
-  email    String @unique
-  password String
+  email    String  @unique
+  password String?
 
   avatarUrl     String?
   isVerified    Boolean        @default(false)
@@ -26,10 +26,24 @@ model User {
   updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
   projects      Project[]
+  oauthAccounts OAuthAccount[]
 
   @@index([id])
   @@index([email])
   @@index([username])
+}
+
+model OAuthAccount {
+  id                String        @id @default(uuid())
+  provider          OAuthProvider
+  providerAccountId String
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 //RefreshToken Token
@@ -83,4 +97,9 @@ enum Languages {
   EXPRESS
   REACT
   NEXT
+}
+
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
 }

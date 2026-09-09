@@ -1,3 +1,5 @@
+import { OAuthProvider } from "../generated/prisma/enums";
+
 interface User {
   id: string;
   name: string;
@@ -9,4 +11,14 @@ interface User {
   updatedAt: Date;
 }
 
-export type {User as default};
+interface OAuthUser {
+  oAuthId: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  isVerified: boolean;
+  provider: OAuthProvider;
+}
+
+export type { User as default };
+export { OAuthUser };
